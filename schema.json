@@ -1,0 +1,50 @@
+{
+  "invoice_number": "",
+  "issue_date": "",
+  "currency": "",
+
+  "seller": {
+    "name": "",
+    "address": {
+      "street": "",
+      "city": "",
+      "state": "",
+      "postal_code": "",
+      "country": ""
+    },
+    "tax_id": "",
+    "iban": ""
+  },
+
+  "client": {
+    "name": "",
+    "address": {
+      "street": "",
+      "city": "",
+      "state": "",
+      "postal_code": "",
+      "country": ""
+    },
+    "tax_id": ""
+  },
+
+  "items": [
+    {
+      "number": 0,
+      "description": "",
+      "quantity": 0,
+      "unit_of_measure": "",
+      "net_unit_price": 0.0,
+      "net_amount": 0.0,
+      "vat_percent": 0,
+      "gross_amount": 0.0
+    }
+  ],
+
+  "summary": {
+    "vat_percent": 0,
+    "net_total": 0.0,
+    "vat_total": 0.0,
+    "gross_total": 0.0
+  }
+}

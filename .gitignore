@@ -30,7 +30,7 @@ models/*.gguf
 models/*.bin
 
 # Output files
-*.json
+output/*.json
 !requirements.json
 batch_results.json
 example_output.json
