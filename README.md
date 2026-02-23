@@ -17,9 +17,34 @@ A Python system that combines OCR text extraction with local LLM processing to e
 Invoice Image → OCR Extractor → Raw Text → LLM Processor → Structured JSON
 ```
 
-## Prerequisites
+## Quick Start
 
-### 1. Install Tesseract OCR
+### Automated Setup (Recommended)
+
+Run the setup script to automatically install all dependencies:
+
+```bash
+./setup.sh
+```
+
+This script will:
+- Install Tesseract OCR (system dependency)
+- Install Python packages from requirements.txt
+- Create necessary directories (models, output)
+- Verify installations
+
+After running the setup script, download the LLM model:
+
+```bash
+cd models
+wget https://huggingface.co/microsoft/Phi-3.5-mini-instruct-GGUF/resolve/main/Phi-3.5-mini-instruct-Q4_K_M.gguf
+```
+
+### Manual Installation
+
+If you prefer to install manually or the setup script doesn't work for your system:
+
+#### 1. Install Tesseract OCR
 
 **macOS:**
 ```bash
@@ -28,15 +53,22 @@ brew install tesseract
 
 **Linux (Ubuntu/Debian):**
 ```bash
+sudo apt-get update
 sudo apt-get install tesseract-ocr
 ```
 
 **Windows:**
 Download from: https://github.com/UB-Mannheim/tesseract/wiki
 
-### 2. Download the LLM Model
+#### 2. Install Python Dependencies
 
-Download the Phi-3.5-mini-instruct model:
+```bash
+pip install -r requirements.txt
+```
+
+**Note:** Installing `llama-cpp-python` may take a few minutes as it compiles C++ code.
+
+#### 3. Download the LLM Model
 
 ```bash
 # Create models directory
@@ -48,26 +80,6 @@ wget https://huggingface.co/microsoft/Phi-3.5-mini-instruct-GGUF/resolve/main/Ph
 
 # Or download manually from:
 # https://huggingface.co/microsoft/Phi-3.5-mini-instruct-GGUF
-```
-
-### 3. Install Python Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-**Note:** Installing `llama-cpp-python` may take a few minutes as it compiles C++ code.
-
-## Installation
-
-```bash
-# Clone or download the project
-cd doc-intel-local-llm
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Download the model (see Prerequisites above)
 ```
 
 ## Usage
