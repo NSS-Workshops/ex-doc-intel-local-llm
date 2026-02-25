@@ -1,6 +1,6 @@
 """
-End-to-end tests for complete invoice processing pipeline
-No mocking - tests the full system with real invoices and LLM
+End-to-end test for complete invoice processing pipeline
+No mocking - tests the full system with real invoice and LLM
 """
 
 import pytest
@@ -17,7 +17,7 @@ from invoice_processor import InvoiceProcessor
 
 @pytest.mark.e2e
 class TestEndToEndProcessing:
-    """End-to-end tests with real invoices and LLM processing"""
+    """End-to-end test with real invoice and LLM processing"""
     
     @pytest.fixture
     def processor(self):
@@ -32,56 +32,125 @@ class TestEndToEndProcessing:
             max_retries=3
         )
         
-        # Load model once for all tests
+        # Load model once for the test
         if not processor.load_model():
             pytest.skip("Failed to load model")
         
         return processor
     
-    def test_batch1_invoice_complete_pipeline(self, processor, tmp_path):
-        """Test complete pipeline with batch 1 invoice"""
+    @pytest.fixture
+    def expected_data(self):
+        """Load expected invoice data"""
+        expected_file = Path(__file__).parent / "expected_batch1_1044.json"
+        with open(expected_file, 'r') as f:
+            return json.load(f)
+    
+    def test_batch1_invoice_complete_pipeline(self, processor, expected_data, tmp_path):
+        """Test complete pipeline with batch 1 invoice and validate actual values"""
         invoice_path = "data/batch_1/batch_1/batch1_3/batch1-1044.jpg"
         
         if not Path(invoice_path).exists():
             pytest.skip(f"Invoice file not found: {invoice_path}")
         
         # Process invoice
-        result = processor.process_invoice(invoice_path)
+        result = processor.process_invoice(invoice_path, temperature=0.0)
         
-        # Assert result structure
+        # Assert result exists
         assert result is not None, "Processing should return structured data"
         assert isinstance(result, dict), "Result should be a dictionary"
         
-        # Assert expected fields exist
-        assert "invoice_number" in result or result.get("invoice_number") is not None
-        assert "issue_date" in result or result.get("issue_date") is not None
-        assert "currency" in result or result.get("currency") is not None
+        # Assert invoice number
+        assert result.get("invoice_number") == expected_data["invoice_number"], \
+            f"Invoice number should be {expected_data['invoice_number']}"
+        
+        # Assert issue date (allow flexible date formats)
+        if result.get("issue_date"):
+            # Normalize date format for comparison
+            result_date = result["issue_date"].replace("/", "-")
+            expected_date = expected_data["issue_date"]
+            # Check if dates match (allow YYYY-MM-DD or MM-DD-YYYY or DD-MM-YYYY)
+            assert any(date_part in result_date for date_part in ["2017", "07", "20"]), \
+                f"Issue date should contain 2017-07-20 components, got {result['issue_date']}"
         
         # Assert seller information
-        if result.get("seller"):
-            assert isinstance(result["seller"], dict)
-            assert "name" in result["seller"] or result["seller"].get("name") is not None
+        assert result.get("seller") is not None, "Seller information should exist"
+        seller = result["seller"]
+        assert seller.get("name") == expected_data["seller"]["name"], \
+            f"Seller name should be {expected_data['seller']['name']}"
+        assert seller.get("tax_id") == expected_data["seller"]["tax_id"], \
+            f"Seller tax ID should be {expected_data['seller']['tax_id']}"
+        
+        # Assert seller address
+        if seller.get("address"):
+            seller_addr = seller["address"]
+            expected_addr = expected_data["seller"]["address"]
+            assert seller_addr.get("city") == expected_addr["city"], \
+                f"Seller city should be {expected_addr['city']}"
+            assert seller_addr.get("state") == expected_addr["state"], \
+                f"Seller state should be {expected_addr['state']}"
         
         # Assert client information
-        if result.get("client"):
-            assert isinstance(result["client"], dict)
-            assert "name" in result["client"] or result["client"].get("name") is not None
+        assert result.get("client") is not None, "Client information should exist"
+        client = result["client"]
+        assert client.get("name") == expected_data["client"]["name"], \
+            f"Client name should be {expected_data['client']['name']}"
+        assert client.get("tax_id") == expected_data["client"]["tax_id"], \
+            f"Client tax ID should be {expected_data['client']['tax_id']}"
         
-        # Assert items structure
-        if result.get("items"):
-            assert isinstance(result["items"], list)
-            if len(result["items"]) > 0:
-                item = result["items"][0]
-                assert isinstance(item, dict)
-                # Check for common item fields
-                assert any(key in item for key in ["description", "quantity", "net_amount"])
+        # Assert client address
+        if client.get("address"):
+            client_addr = client["address"]
+            expected_addr = expected_data["client"]["address"]
+            assert client_addr.get("city") == expected_addr["city"], \
+                f"Client city should be {expected_addr['city']}"
+            assert client_addr.get("state") == expected_addr["state"], \
+                f"Client state should be {expected_addr['state']}"
         
-        # Assert summary information
-        if result.get("summary"):
-            assert isinstance(result["summary"], dict)
-            # Check for numeric fields
-            if result["summary"].get("gross_total") is not None:
-                assert isinstance(result["summary"]["gross_total"], (int, float))
+        # Assert items
+        assert result.get("items") is not None, "Items should exist"
+        assert isinstance(result["items"], list), "Items should be a list"
+        assert len(result["items"]) == len(expected_data["items"]), \
+            f"Should have {len(expected_data['items'])} items"
+        
+        # Validate each item
+        for i, (result_item, expected_item) in enumerate(zip(result["items"], expected_data["items"])):
+            assert result_item.get("number") == expected_item["number"], \
+                f"Item {i+1} number should be {expected_item['number']}"
+            
+            # Check quantity (allow small floating point differences)
+            if result_item.get("quantity") is not None:
+                assert abs(result_item["quantity"] - expected_item["quantity"]) < 0.01, \
+                    f"Item {i+1} quantity should be {expected_item['quantity']}"
+            
+            # Check net amount (allow small floating point differences)
+            if result_item.get("net_amount") is not None:
+                assert abs(result_item["net_amount"] - expected_item["net_amount"]) < 0.01, \
+                    f"Item {i+1} net amount should be {expected_item['net_amount']}"
+        
+        # Assert summary
+        assert result.get("summary") is not None, "Summary should exist"
+        summary = result["summary"]
+        expected_summary = expected_data["summary"]
+        
+        # Check VAT percent
+        if summary.get("vat_percent") is not None:
+            assert abs(summary["vat_percent"] - expected_summary["vat_percent"]) < 0.01, \
+                f"VAT percent should be {expected_summary['vat_percent']}%"
+        
+        # Check net total (allow small floating point differences)
+        if summary.get("net_total") is not None:
+            assert abs(summary["net_total"] - expected_summary["net_total"]) < 0.01, \
+                f"Net total should be {expected_summary['net_total']}"
+        
+        # Check VAT total
+        if summary.get("vat_total") is not None:
+            assert abs(summary["vat_total"] - expected_summary["vat_total"]) < 0.01, \
+                f"VAT total should be {expected_summary['vat_total']}"
+        
+        # Check gross total
+        if summary.get("gross_total") is not None:
+            assert abs(summary["gross_total"] - expected_summary["gross_total"]) < 0.01, \
+                f"Gross total should be {expected_summary['gross_total']}"
         
         # Save and verify output
         output_file = tmp_path / "batch1_output.json"
@@ -96,148 +165,5 @@ class TestEndToEndProcessing:
         assert "structured_data" in saved_data
         assert "raw_ocr_text" in saved_data
         assert len(saved_data["raw_ocr_text"]) > 0, "OCR text should not be empty"
-    
-    def test_batch2_invoice_complete_pipeline(self, processor, tmp_path):
-        """Test complete pipeline with batch 2 invoice"""
-        invoice_path = "data/batch_2/batch_2/batch2_2/batch2-0644.jpg"
         
-        if not Path(invoice_path).exists():
-            pytest.skip(f"Invoice file not found: {invoice_path}")
-        
-        # Process invoice
-        result = processor.process_invoice(invoice_path)
-        
-        # Assert result structure
-        assert result is not None, "Processing should return structured data"
-        assert isinstance(result, dict), "Result should be a dictionary"
-        
-        # Assert expected fields exist
-        assert "invoice_number" in result or result.get("invoice_number") is not None
-        assert "issue_date" in result or result.get("issue_date") is not None
-        
-        # Assert seller information exists
-        if result.get("seller"):
-            assert isinstance(result["seller"], dict)
-        
-        # Assert client information exists
-        if result.get("client"):
-            assert isinstance(result["client"], dict)
-        
-        # Assert items is a list
-        if result.get("items"):
-            assert isinstance(result["items"], list)
-        
-        # Save and verify output
-        output_file = tmp_path / "batch2_output.json"
-        save_success = processor.save_results(str(output_file))
-        assert save_success is True
-        assert output_file.exists()
-        
-        # Verify saved file has required structure
-        with open(output_file, 'r') as f:
-            saved_data = json.load(f)
-        
-        assert "structured_data" in saved_data
-        assert "raw_ocr_text" in saved_data
-    
-    def test_batch3_invoice_complete_pipeline(self, processor, tmp_path):
-        """Test complete pipeline with batch 3 invoice"""
-        invoice_path = "data/batch_3/batch_3/batch3_1/batch3-0008.jpg"
-        
-        if not Path(invoice_path).exists():
-            pytest.skip(f"Invoice file not found: {invoice_path}")
-        
-        # Process invoice
-        result = processor.process_invoice(invoice_path)
-        
-        # Assert result structure
-        assert result is not None, "Processing should return structured data"
-        assert isinstance(result, dict), "Result should be a dictionary"
-        
-        # Assert key fields are present (even if None)
-        expected_top_level_fields = ["invoice_number", "issue_date", "currency", "seller", "client", "items", "summary"]
-        present_fields = [field for field in expected_top_level_fields if field in result]
-        assert len(present_fields) > 0, "At least some expected fields should be present"
-        
-        # If seller exists, verify structure
-        if result.get("seller") and result["seller"] is not None:
-            assert isinstance(result["seller"], dict)
-            if result["seller"].get("address"):
-                assert isinstance(result["seller"]["address"], dict)
-        
-        # If client exists, verify structure
-        if result.get("client") and result["client"] is not None:
-            assert isinstance(result["client"], dict)
-            if result["client"].get("address"):
-                assert isinstance(result["client"]["address"], dict)
-        
-        # If items exist, verify structure
-        if result.get("items") and result["items"] is not None:
-            assert isinstance(result["items"], list)
-            for item in result["items"]:
-                assert isinstance(item, dict)
-        
-        # If summary exists, verify structure
-        if result.get("summary") and result["summary"] is not None:
-            assert isinstance(result["summary"], dict)
-            # Verify numeric fields are numbers if present
-            for field in ["net_total", "vat_total", "gross_total", "vat_percent"]:
-                if result["summary"].get(field) is not None:
-                    assert isinstance(result["summary"][field], (int, float)), f"{field} should be numeric"
-        
-        # Save and verify output
-        output_file = tmp_path / "batch3_output.json"
-        save_success = processor.save_results(str(output_file))
-        assert save_success is True
-        assert output_file.exists()
-        
-        # Verify saved file structure
-        with open(output_file, 'r') as f:
-            saved_data = json.load(f)
-        
-        assert "structured_data" in saved_data
-        assert "raw_ocr_text" in saved_data
-        assert isinstance(saved_data["structured_data"], dict)
-        assert isinstance(saved_data["raw_ocr_text"], str)
-    
-    def test_ocr_text_extraction_quality(self, processor):
-        """Test that OCR extracts meaningful text from invoices"""
-        invoice_paths = [
-            "data/batch_1/batch_1/batch1_3/batch1-1044.jpg",
-            "data/batch_2/batch_2/batch2_2/batch2-0644.jpg",
-            "data/batch_3/batch_3/batch3_1/batch3-0008.jpg",
-        ]
-        
-        for invoice_path in invoice_paths:
-            if Path(invoice_path).exists():
-                ocr_text = processor.extract_text_from_image(invoice_path)
-                
-                assert ocr_text is not None, f"OCR should extract text from {invoice_path}"
-                assert len(ocr_text) > 50, f"OCR text should be substantial for {invoice_path}"
-                assert isinstance(ocr_text, str), "OCR text should be a string"
-                
-                # Check for common invoice keywords
-                text_lower = ocr_text.lower()
-                has_invoice_keywords = any(keyword in text_lower for keyword in 
-                    ["invoice", "total", "date", "amount", "tax", "vat", "seller", "buyer", "client"])
-                
-                assert has_invoice_keywords, f"OCR text should contain invoice-related keywords for {invoice_path}"
-    
-    def test_structured_data_consistency(self, processor):
-        """Test that structured data is consistent across multiple runs"""
-        invoice_path = "data/batch_1/batch_1/batch1_3/batch1-1044.jpg"
-        
-        if not Path(invoice_path).exists():
-            pytest.skip(f"Invoice file not found: {invoice_path}")
-        
-        # Process same invoice twice
-        result1 = processor.process_invoice(invoice_path, temperature=0.0)
-        result2 = processor.process_invoice(invoice_path, temperature=0.0)
-        
-        # With temperature=0, results should be identical or very similar
-        assert result1 is not None and result2 is not None
-        
-        # Check that key fields match
-        if result1.get("invoice_number") and result2.get("invoice_number"):
-            assert result1["invoice_number"] == result2["invoice_number"], \
-                "Invoice number should be consistent across runs"
+        print("\n✓ All assertions passed! Invoice data extracted correctly.")

@@ -1,0 +1,66 @@
+{
+  "invoice_number": "39760888",
+  "issue_date": "2017-07-20",
+  "currency": "USD",
+  "seller": {
+    "name": "Williamson-Rogers",
+    "address": {
+      "street": "8214 Douglas Well",
+      "city": "Lauraland",
+      "state": "DC",
+      "postal_code": "14785",
+      "country": null
+    },
+    "tax_id": "968-74-1503",
+    "iban": "GB51ROKZ76547758479639"
+  },
+  "client": {
+    "name": "Yates and Sons",
+    "address": {
+      "street": "2569 Gloria Ridges",
+      "city": "Wallaceview",
+      "state": "FL",
+      "postal_code": "68952",
+      "country": null
+    },
+    "tax_id": "908-84-3278"
+  },
+  "items": [
+    {
+      "number": 1,
+      "description": "Nintendo Switch Lite Turquoise Blue CONSOLE ONLY - No Charger [B4-1]",
+      "quantity": 1.0,
+      "unit_of_measure": "each",
+      "net_unit_price": 130.0,
+      "net_amount": 130.0,
+      "vat_percent": 10.0,
+      "gross_amount": 143.0
+    },
+    {
+      "number": 2,
+      "description": "Sony PlayStation Gray PS1 Console! CONSOLE ONLY! Tested Working!",
+      "quantity": 4.0,
+      "unit_of_measure": "each",
+      "net_unit_price": 21.99,
+      "net_amount": 87.96,
+      "vat_percent": 10.0,
+      "gross_amount": 96.76
+    },
+    {
+      "number": 3,
+      "description": "Nintendo BLUE Wii System Game Console Complete with 2 Motion Remotes Tested Work",
+      "quantity": 3.0,
+      "unit_of_measure": "each",
+      "net_unit_price": 99.98,
+      "net_amount": 299.94,
+      "vat_percent": 10.0,
+      "gross_amount": 329.93
+    }
+  ],
+  "summary": {
+    "vat_percent": 10.0,
+    "net_total": 517.90,
+    "vat_total": 51.79,
+    "gross_total": 569.69
+  }
+}
