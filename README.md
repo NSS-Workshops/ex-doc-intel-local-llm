@@ -19,7 +19,7 @@ Invoice Image → OCR Extractor → Raw Text → LLM Processor → Structured JS
 
 ## Quick Start
 
-### Automated Setup (Recommended)
+### Setup
 
 Run the setup script to automatically install all dependencies:
 
@@ -31,56 +31,12 @@ This script will:
 - Install Tesseract OCR (system dependency)
 - Install Python packages from requirements.txt
 - Create necessary directories (models, output)
-- Verify installations
+- Download the LLM model (~2.4GB)
+- Verify all installations
 
-After running the setup script, download the LLM model:
+**Note:** The setup script is required and handles everything automatically. It supports macOS, Linux (Ubuntu/Debian), and Windows (Git Bash/WSL).
 
-```bash
-cd models
-wget https://huggingface.co/microsoft/Phi-3.5-mini-instruct-GGUF/resolve/main/Phi-3.5-mini-instruct-Q4_K_M.gguf
-```
-
-### Manual Installation
-
-If you prefer to install manually or the setup script doesn't work for your system:
-
-#### 1. Install Tesseract OCR
-
-**macOS:**
-```bash
-brew install tesseract
-```
-
-**Linux (Ubuntu/Debian):**
-```bash
-sudo apt-get update
-sudo apt-get install tesseract-ocr
-```
-
-**Windows:**
-Download from: https://github.com/UB-Mannheim/tesseract/wiki
-
-#### 2. Install Python Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-**Note:** Installing `llama-cpp-python` may take a few minutes as it compiles C++ code.
-
-#### 3. Download the LLM Model
-
-```bash
-# Create models directory
-mkdir -p models
-
-# Download the model (example using wget)
-cd models
-wget https://huggingface.co/microsoft/Phi-3.5-mini-instruct-GGUF/resolve/main/Phi-3.5-mini-instruct-Q4_K_M.gguf
-
-# Or download manually from:
-# https://huggingface.co/microsoft/Phi-3.5-mini-instruct-GGUF
-```
+**For Windows users:** If Tesseract is not installed, the script will provide download instructions. After installing Tesseract, re-run the setup script.
 
 ## Usage
 
@@ -116,6 +72,7 @@ python main.py path/to/invoice.jpg \
 
 python main.py data/batch_1/batch_1/batch1_1/batch1-0001.jpg \
     -o ./output/output.json
+
 ### Using as a Python Class
 
 ```python
@@ -210,82 +167,3 @@ The system extracts the following fields by default:
 }
 ```
 
-## Class Methods
-
-### `InvoiceProcessor(model_path, n_ctx, n_threads)`
-Constructor to initialize the processor with model configuration.
-
-### `load_model()`
-Load the LLM model into memory.
-
-### `extract_text_from_image(image_path)`
-Extract text from an invoice image using OCR.
-
-### `extract_structured_data(ocr_text, temperature)`
-Use LLM to extract structured data from OCR text.
-
-### `process_invoice(image_path, temperature)`
-Complete pipeline: OCR + LLM extraction in one call.
-
-### `save_results(output_path, include_ocr_text)`
-Save structured data to a JSON file.
-
-## Performance Tips
-
-1. **CPU Threads**: Adjust `--threads` to match your CPU cores for faster processing
-2. **Context Window**: Reduce `--ctx` if you have memory constraints
-3. **Temperature**: Use 0 or 0.1 for deterministic, consistent output
-4. **Model Size**: Q4_K_M provides good balance of speed and accuracy
-
-## Troubleshooting
-
-### Model Not Found
-```
-Error: Model file './models/Phi-3.5-mini-instruct-Q4_K_M.gguf' does not exist.
-```
-**Solution**: Download the model (see Prerequisites section)
-
-### OCR Extraction Failed
-```
-Error: Image file 'invoice.jpg' does not exist.
-```
-**Solution**: Check the image path is correct
-
-### JSON Parsing Error
-```
-Error: Failed to parse JSON from LLM output
-```
-**Solution**: Try adjusting temperature or providing a schema hint
-
-### Out of Memory
-**Solution**: Reduce `--ctx` parameter or use a smaller model
-
-## File Structure
-
-```
-project/
-├── ocr_extractor_class.py      # OCR extraction class
-├── invoice_processor.py        # LLM processing class
-├── main.py          # CLI script
-├── requirements.txt            # Python dependencies
-├── models/                     # Model files directory
-│   └── Phi-3.5-mini-instruct-Q4_K_M.gguf
-└── data/                       # Invoice images
-```
-
-## Next Steps
-
-1. **Customize Schema**: Modify the extraction prompt in `create_extraction_prompt()` method
-2. **Add Validation**: Implement field validation for extracted data
-3. **Batch Processing**: Process multiple invoices in parallel
-4. **Fine-tune Model**: Train on your specific invoice format for better accuracy
-
-## Requirements
-
-- Python 3.8+
-- Pillow (PIL)
-- pytesseract
-- llama-cpp-python
-- Tesseract OCR (system installation)
-- ~2GB RAM for model
-- ~4GB disk space for model file

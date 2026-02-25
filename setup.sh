@@ -15,10 +15,12 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     OS="linux"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     OS="macos"
+elif [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]] || [[ "$OSTYPE" == "cygwin" ]]; then
+    OS="windows"
 else
-    echo "Unsupported operating system: $OSTYPE"
-    echo "Please install Tesseract OCR manually."
-    exit 1
+    echo "Warning: Unknown operating system: $OSTYPE"
+    echo "Attempting to proceed with generic setup..."
+    OS="unknown"
 fi
 
 echo "Detected OS: $OS"
@@ -46,6 +48,25 @@ elif [ "$OS" == "macos" ]; then
     else
         echo "Error: Homebrew not found. Please install Homebrew first:"
         echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+        exit 1
+    fi
+elif [ "$OS" == "windows" ]; then
+    echo "Windows detected. Checking for Tesseract OCR..."
+    if command -v tesseract &> /dev/null; then
+        echo "✓ Tesseract OCR is already installed"
+    else
+        echo "Tesseract OCR not found."
+        echo "Please install Tesseract OCR manually:"
+        echo "  1. Download from: https://github.com/UB-Mannheim/tesseract/wiki"
+        echo "  2. Run the installer"
+        echo "  3. Add Tesseract to your PATH"
+        echo "  4. Re-run this setup script"
+        exit 1
+    fi
+else
+    echo "Checking for Tesseract OCR..."
+    if ! command -v tesseract &> /dev/null; then
+        echo "Tesseract OCR not found. Please install it manually for your system."
         exit 1
     fi
 fi
