@@ -61,14 +61,26 @@ class OCRExtractor:
         Returns:
             str: Extracted text or None if extraction fails
         """
+        # TODO: Implement this method
+        # Your implementation should:
+        # 1. Check if self.image is None - if so, print error and return None
+        # 2. Use pytesseract to extract text from self.image
+        # 3. Store the result in self.text
+        # 4. Return the extracted text
+        # 5. Handle any exceptions that might occur
+        # Check if image is loaded
         if self.image is None:
             print("Error: No image loaded. Call load_image() first.", file=sys.stderr)
             return None
         
+        # Try to extract text
         try:
+            # Call pytesseract to extract text from the image
             self.text = pytesseract.image_to_string(self.image)
+            # Return the extracted text
             return self.text
         except Exception as e:
+            # Handle any exceptions
             print(f"Error extracting text: {e}", file=sys.stderr)
             return None
     
