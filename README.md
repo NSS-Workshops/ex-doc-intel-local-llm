@@ -1,3 +1,5 @@
+@DEPRECATED - too many prerequisites that some tracks are not familiar with. OOP/classes, mocking , software testing etc... 
+
 # Invoice Processor with Local LLM
 
 A Python system that combines OCR text extraction with local LLM processing to extract structured data from invoice images.
